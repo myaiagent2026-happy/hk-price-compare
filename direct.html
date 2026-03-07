@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>港超市格價神器 - 直接格價版</title>
+  <style>
+    body{font-family:'Microsoft JhengHei',sans-serif;background:linear-gradient(135deg,#667eea,#764ba2);min-height:100vh;margin:0;padding:20px}
+    .card{max-width:980px;margin:0 auto;background:#fff;border-radius:16px;padding:24px;box-shadow:0 12px 40px rgba(0,0,0,.2)}
+    h1{margin:0 0 8px;color:#1f4e79}
+    .sub{color:#666;margin-bottom:16px}
+    .row{display:flex;gap:10px;flex-wrap:wrap}
+    input{flex:1;min-width:240px;padding:12px 14px;border:1px solid #ddd;border-radius:10px;font-size:16px}
+    button{padding:12px 18px;border:0;border-radius:10px;background:#2e75b6;color:#fff;font-size:16px;cursor:pointer}
+    .tip{font-size:13px;color:#666;margin:10px 0 0}
+    .status{margin:14px 0;color:#444}
+    .results{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-top:12px}
+    .item{border:1px solid #e6e6e6;border-radius:12px;padding:12px;background:#fafcff}
+    .price{font-size:24px;font-weight:700;color:#d12}
+    .store{font-weight:700;color:#1f4e79}
+    .name{margin-top:6px;line-height:1.35}
+    .meta{font-size:12px;color:#666;margin-top:6px}
+    .promo{font-size:12px;color:#0a7c2f;margin-top:6px}
+    .empty{padding:16px;border:1px dashed #bbb;border-radius:10px;color:#666}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>🛒 港超市格價神器（直接格價版）</h1>
+    <div class="sub">輸入貨品名，直接顯示最平 Top 10（由平到貴）｜資料來源：香港消委會 網上價格一覽通</div>
+
+    <div class="row">
+      <input id="q" placeholder="例如：牛奶 / 雞蛋 / 廁紙 / 米" />
+      <button id="go">搜尋最平</button>
+    </div>
+    <div class="tip">支援：WELLCOME、PARKNSHOP、MARKET PLACE、AEON、MANNINGS、WATSONS、DCH FOOD MART</div>
+
+    <div id="status" class="status">準備中...</div>
+    <div id="results" class="results"></div>
+  </div>
+
+<script>
+const CSV_URL = 'https://online-price-watch.consumer.org.hk/opw/opendata/pricewatch_zh-Hant.csv';
+const FILE_URL = encodeURIComponent(CSV_URL);
+
+const storeMap = {
+  WELLCOME:'惠康', PARKNSHOP:'百佳', MARKETPLACE:'Market Place', MARKET_PLACE:'Market Place',
+  AEON:'AEON', MANNINGS:'萬寧', WATSONS:'屈臣氏', DCHFOODMART:'大昌食品', DCH_FOOD_MART:'大昌食品'
+};
+
+function ymd(d){
+  const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), day=String(d.getDate()).padStart(2,'0');
+  return `${y}${m}${day}`;
+}
+
+function parseCSV(text){
+  // simple parser for this dataset structure
+  const lines = text.split(/\r?\n/).filter(Boolean);
+  const rows=[];
+  for(let i=1;i<lines.length;i++){
+    const cols=[]; let cur='', inQ=false;
+    for(let j=0;j<lines[i].length;j++){
+      const ch=lines[i][j];
+      if(ch==='"'){ inQ=!inQ; continue; }
+      if(ch===',' && !inQ){ cols.push(cur); cur=''; }
+      else cur+=ch;
+    }
+    cols.push(cur);
+    if(cols.length>=9){
+      rows.push({
+        c1:cols[0], c2:cols[1], c3:cols[2], code:cols[3], brand:cols[4], name:cols[5],
+        storeCode:cols[6], price:parseFloat(cols[7]), promo:cols[8]||''
+      });
+    }
+  }
+  return rows.filter(r=>!Number.isNaN(r.price));
+}
+
+async function fetchLatestCsv(){
+  const now = new Date();
+  const yesterday = new Date(now.getTime()-24*3600*1000);
+  const start = new Date(now.getTime()-7*24*3600*1000);
+  const listUrl = `https://app.data.gov.hk/v1/historical-archive/list-file-versions?url=${FILE_URL}&start=${ymd(start)}&end=${ymd(yesterday)}`;
+
+  const listRes = await fetch(listUrl);
+  if(!listRes.ok) throw new Error('未能取得版本清單');
+  const list = await listRes.json();
+  const t = (list.timestamps && list.timestamps.length) ? list.timestamps[list.timestamps.length-1] : null;
+  if(!t) throw new Error('找不到可用價格檔案');
+
+  const fileUrl = `https://app.data.gov.hk/v1/historical-archive/get-file?url=${FILE_URL}&time=${encodeURIComponent(t)}`;
+  const fileRes = await fetch(fileUrl);
+  if(!fileRes.ok) throw new Error('未能下載價格資料');
+  return await fileRes.text();
+}
+
+let allRows = [];
+
+function render(results){
+  const box=document.getElementById('results');
+  if(!results.length){ box.innerHTML='<div class="empty">搵唔到相關貨品，試下用短啲關鍵字（例如：牛奶、雞蛋）。</div>'; return; }
+  box.innerHTML = results.map(r=>`
+    <div class="item">
+      <div class="price">$${r.price.toFixed(2)}</div>
+      <div class="store">${storeMap[r.storeCode]||r.storeCode}</div>
+      <div class="name">${r.brand ? r.brand+' - ' : ''}${r.name}</div>
+      <div class="meta">分類：${r.c1} / ${r.c2}</div>
+      ${r.promo ? `<div class="promo">優惠：${r.promo}</div>` : ''}
+    </div>
+  `).join('');
+}
+
+function search(){
+  const q=document.getElementById('q').value.trim().toLowerCase();
+  if(!q){document.getElementById('status').textContent='請先輸入貨品名稱';return;}
+
+  const matched = allRows.filter(r=>{
+    const s = `${r.brand} ${r.name} ${r.c1} ${r.c2} ${r.c3}`.toLowerCase();
+    return s.includes(q);
+  });
+
+  matched.sort((a,b)=>a.price-b.price);
+  const top10 = matched.slice(0,10);
+  document.getElementById('status').textContent = `找到 ${matched.length} 項，顯示最平 10 項`;
+  render(top10);
+}
+
+async function boot(){
+  const status=document.getElementById('status');
+  try{
+    status.textContent='正在載入最新價格資料...';
+    const csv = await fetchLatestCsv();
+    allRows = parseCSV(csv);
+    status.textContent = `已載入 ${allRows.length.toLocaleString()} 筆價格資料，請輸入貨品搜尋`;
+  }catch(e){
+    status.textContent='載入失敗：'+e.message+'（請稍後再試）';
+    document.getElementById('results').innerHTML='<div class="empty">資料來源暫時連線失敗。</div>';
+  }
+}
+
+document.getElementById('go').addEventListener('click',search);
+document.getElementById('q').addEventListener('keypress',e=>{if(e.key==='Enter')search();});
+boot();
+</script>
+</body>
+</html>
