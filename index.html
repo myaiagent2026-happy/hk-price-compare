@@ -64,13 +64,31 @@ function render(results){
   `).join('');
 }
 
+function expandKeywords(q){
+  const map = {
+    'coke':['可樂','可口可樂','汽水'],
+    'coca cola':['可樂','可口可樂','汽水'],
+    'cola':['可樂','可口可樂','汽水'],
+    'milk':['牛奶'],
+    'egg':['雞蛋','蛋'],
+    'eggs':['雞蛋','蛋'],
+    'rice':['米'],
+    'toilet paper':['廁紙','衛生紙'],
+    'tissue':['紙巾','面紙','廁紙']
+  };
+  const keys = [q];
+  if(map[q]) keys.push(...map[q]);
+  return [...new Set(keys.map(x=>x.toLowerCase()))];
+}
+
 function search(){
   const q=document.getElementById('q').value.trim().toLowerCase();
   if(!q){document.getElementById('status').textContent='請先輸入貨品名稱';return;}
 
+  const keywords = expandKeywords(q);
   const matched = allRows.filter(r=>{
     const s = `${r.brand} ${r.name} ${r.c1} ${r.c2} ${r.c3}`.toLowerCase();
-    return s.includes(q);
+    return keywords.some(k => s.includes(k));
   });
 
   matched.sort((a,b)=>a.price-b.price);
