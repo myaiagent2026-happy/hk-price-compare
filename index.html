@@ -155,13 +155,13 @@
             <ol>
                 <li>輸入你想買嘅產品名稱</li>
                 <li>按「搵」或者 Enter</li>
-                <li>會自動跳去 Telegram</li>
-                <li>AI 助手會幫你格價！</li>
+                <li>會自動跳去 WhatsApp</li>
+                <li>Send 俾老公，老公會幫你格價！</li>
             </ol>
         </div>
 
-        <a href="https://t.me/myaiagent2026C_bot" class="telegram-link" id="telegramLink">
-            💬 直接去 Telegram 問
+        <a href="#" class="telegram-link" id="whatsappLink" style="background: #25D366;">
+            💬 用 WhatsApp 問老公
         </a>
 
         <p class="footer">支援：百佳、惠康、Market Place、大生、759<br>Powered by OpenClaw AI</p>
@@ -171,8 +171,8 @@
         function search() {
             const query = document.getElementById('searchInput').value.trim();
             if (query) {
-                const message = encodeURIComponent(`請幫我格價：${query}\n\n比較香港各大超市價格（百佳、惠康、Market Place等），邊度最平？`);
-                window.open(`https://t.me/myaiagent2026C_bot?text=${message}`, '_blank');
+                const message = encodeURIComponent(`老公，幫我格價：${query}\n\n比較香港各大超市價格（百佳、惠康、Market Place等），邊度最平？`);
+                window.open(`https://wa.me/85261275505?text=${message}`, '_blank');
             }
         }
 
