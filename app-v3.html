@@ -32,6 +32,7 @@
     <div class="row">
       <input id="q" placeholder="例如：牛奶 / 雞蛋 / 廁紙 / 米" />
       <button id="go">搜尋最平</button>
+      <button id="refreshData" title="重新讀取最新價格檔">刷新價目表</button>
     </div>
     <div class="tip">支援：WELLCOME、PARKNSHOP、MARKET PLACE、AEON、MANNINGS、WATSONS、DCH FOOD MART</div>
 
@@ -125,16 +126,19 @@ function search(){
   render(top10);
 }
 
-async function boot(){
+async function loadData(isManual=false){
   const status=document.getElementById('status');
   try{
-    status.textContent='正在載入價格資料...';
+    status.textContent = isManual ? '正在刷新價目表...' : '正在載入價格資料...';
     const res = await fetch(DATA_URL + '?t=' + Date.now());
     if(!res.ok) throw new Error('price-data.json 下載失敗');
     const data = await res.json();
     allRows = data.rows || [];
     dataTimestamp = data.timestamp || '';
     status.textContent = `已載入 ${allRows.length.toLocaleString()} 筆資料（更新時間：${dataTimestamp}），請輸入貨品搜尋`;
+    if(isManual){
+      document.getElementById('results').innerHTML = '<div class="empty">已刷新最新價目表，請重新搜尋。</div>';
+    }
   }catch(e){
     status.textContent='載入失敗：'+e.message+'（請稍後再試）';
     document.getElementById('results').innerHTML='<div class="empty">資料來源暫時連線失敗。</div>';
@@ -142,8 +146,9 @@ async function boot(){
 }
 
 document.getElementById('go').addEventListener('click',search);
+document.getElementById('refreshData').addEventListener('click',()=>loadData(true));
 document.getElementById('q').addEventListener('keypress',e=>{if(e.key==='Enter')search();});
-boot();
+loadData(false);
 </script>
 </body>
 </html>
