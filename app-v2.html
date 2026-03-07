@@ -73,6 +73,8 @@ function expandKeywords(q){
     'banana':['香蕉'],
     'orange':['橙','橘'],
     'grape':['提子','葡萄'],
+    'chocolate milk':['朱古力','巧克力','可可','牛奶','milk'],
+    'choco milk':['朱古力','巧克力','可可','牛奶','milk'],
     'milk':['牛奶'],
     'egg':['雞蛋','蛋'],
     'eggs':['雞蛋','蛋'],
@@ -92,9 +94,19 @@ function search(){
   const keywords = expandKeywords(q);
   const ranked = [];
 
+  const needChocolateMilk = q.includes('chocolate milk') || q.includes('choco milk');
+
   for(const r of allRows){
     const nameBrand = `${r.brand} ${r.name}`.toLowerCase();
     const category = `${r.c1} ${r.c2} ${r.c3}`.toLowerCase();
+    const full = `${nameBrand} ${category}`;
+
+    // phrase-intent gate: chocolate milk must contain BOTH concepts
+    if(needChocolateMilk){
+      const hasChoco = full.includes('朱古力') || full.includes('巧克力') || full.includes('可可') || full.includes('chocolate');
+      const hasMilk = full.includes('牛奶') || full.includes('奶') || full.includes('milk');
+      if(!(hasChoco && hasMilk)) continue;
+    }
 
     let score = -1;
     if(nameBrand.includes(q)) score = 100;
