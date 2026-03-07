@@ -40,61 +40,15 @@
   </div>
 
 <script>
-const CSV_URL = 'https://online-price-watch.consumer.org.hk/opw/opendata/pricewatch_zh-Hant.csv';
-const FILE_URL = encodeURIComponent(CSV_URL);
+const DATA_URL = './price-data.json';
 
 const storeMap = {
   WELLCOME:'惠康', PARKNSHOP:'百佳', MARKETPLACE:'Market Place', MARKET_PLACE:'Market Place',
   AEON:'AEON', MANNINGS:'萬寧', WATSONS:'屈臣氏', DCHFOODMART:'大昌食品', DCH_FOOD_MART:'大昌食品'
 };
 
-function ymd(d){
-  const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), day=String(d.getDate()).padStart(2,'0');
-  return `${y}${m}${day}`;
-}
-
-function parseCSV(text){
-  // simple parser for this dataset structure
-  const lines = text.split(/\r?\n/).filter(Boolean);
-  const rows=[];
-  for(let i=1;i<lines.length;i++){
-    const cols=[]; let cur='', inQ=false;
-    for(let j=0;j<lines[i].length;j++){
-      const ch=lines[i][j];
-      if(ch==='"'){ inQ=!inQ; continue; }
-      if(ch===',' && !inQ){ cols.push(cur); cur=''; }
-      else cur+=ch;
-    }
-    cols.push(cur);
-    if(cols.length>=9){
-      rows.push({
-        c1:cols[0], c2:cols[1], c3:cols[2], code:cols[3], brand:cols[4], name:cols[5],
-        storeCode:cols[6], price:parseFloat(cols[7]), promo:cols[8]||''
-      });
-    }
-  }
-  return rows.filter(r=>!Number.isNaN(r.price));
-}
-
-async function fetchLatestCsv(){
-  const now = new Date();
-  const yesterday = new Date(now.getTime()-24*3600*1000);
-  const start = new Date(now.getTime()-7*24*3600*1000);
-  const listUrl = `https://app.data.gov.hk/v1/historical-archive/list-file-versions?url=${FILE_URL}&start=${ymd(start)}&end=${ymd(yesterday)}`;
-
-  const listRes = await fetch(listUrl);
-  if(!listRes.ok) throw new Error('未能取得版本清單');
-  const list = await listRes.json();
-  const t = (list.timestamps && list.timestamps.length) ? list.timestamps[list.timestamps.length-1] : null;
-  if(!t) throw new Error('找不到可用價格檔案');
-
-  const fileUrl = `https://app.data.gov.hk/v1/historical-archive/get-file?url=${FILE_URL}&time=${encodeURIComponent(t)}`;
-  const fileRes = await fetch(fileUrl);
-  if(!fileRes.ok) throw new Error('未能下載價格資料');
-  return await fileRes.text();
-}
-
 let allRows = [];
+let dataTimestamp = '';
 
 function render(results){
   const box=document.getElementById('results');
@@ -102,7 +56,7 @@ function render(results){
   box.innerHTML = results.map(r=>`
     <div class="item">
       <div class="price">$${r.price.toFixed(2)}</div>
-      <div class="store">${storeMap[r.storeCode]||r.storeCode}</div>
+      <div class="store">${storeMap[r.store]||r.store}</div>
       <div class="name">${r.brand ? r.brand+' - ' : ''}${r.name}</div>
       <div class="meta">分類：${r.c1} / ${r.c2}</div>
       ${r.promo ? `<div class="promo">優惠：${r.promo}</div>` : ''}
@@ -128,10 +82,13 @@ function search(){
 async function boot(){
   const status=document.getElementById('status');
   try{
-    status.textContent='正在載入最新價格資料...';
-    const csv = await fetchLatestCsv();
-    allRows = parseCSV(csv);
-    status.textContent = `已載入 ${allRows.length.toLocaleString()} 筆價格資料，請輸入貨品搜尋`;
+    status.textContent='正在載入價格資料...';
+    const res = await fetch(DATA_URL + '?t=' + Date.now());
+    if(!res.ok) throw new Error('price-data.json 下載失敗');
+    const data = await res.json();
+    allRows = data.rows || [];
+    dataTimestamp = data.timestamp || '';
+    status.textContent = `已載入 ${allRows.length.toLocaleString()} 筆資料（更新時間：${dataTimestamp}），請輸入貨品搜尋`;
   }catch(e){
     status.textContent='載入失敗：'+e.message+'（請稍後再試）';
     document.getElementById('results').innerHTML='<div class="empty">資料來源暫時連線失敗。</div>';
