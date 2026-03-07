@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🛒 港超市格價神器</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Microsoft JhengHei', 'PingFang TC', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #1F4E79;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        .subtitle {
+            color: #666;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        .search-box {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        input[type="text"] {
+            flex: 1;
+            padding: 15px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            font-family: inherit;
+            transition: border-color 0.3s;
+        }
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .btn {
+            padding: 15px 25px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: transform 0.2s;
+        }
+        .btn:hover {
+            transform: scale(1.05);
+        }
+        .popular {
+            margin-top: 30px;
+        }
+        .popular h3 {
+            color: #1F4E79;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+        .tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .tag {
+            background: #f0f0f0;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .tag:hover {
+            background: #667eea;
+            color: white;
+        }
+        .how-to {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+        .how-to h3 {
+            color: #1F4E79;
+            margin-bottom: 10px;
+        }
+        .how-to ol {
+            color: #666;
+            padding-left: 20px;
+            line-height: 1.8;
+        }
+        .telegram-link {
+            display: block;
+            text-align: center;
+            margin-top: 20px;
+            padding: 15px;
+            background: #0088cc;
+            color: white;
+            text-decoration: none;
+            border-radius: 10px;
+            font-weight: bold;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            color: #999;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🛒 港超市格價神器</h1>
+        <p class="subtitle">輸入你想買嘅嘢，幫你搵最平！</p>
+
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="例如：牛奶、雞蛋、廁紙...">
+            <button class="btn" onclick="search()">🔍 搵</button>
+        </div>
+
+        <div class="popular">
+            <h3>🔥 熱門搜尋</h3>
+            <div class="tags">
+                <span class="tag" onclick="quickSearch('牛奶')">牛奶</span>
+                <span class="tag" onclick="quickSearch('雞蛋')">雞蛋</span>
+                <span class="tag" onclick="quickSearch('廁紙')">廁紙</span>
+                <span class="tag" onclick="quickSearch('米')">米</span>
+                <span class="tag" onclick="quickSearch('食用油')">食用油</span>
+                <span class="tag" onclick="quickSearch('即食麵')">即食麵</span>
+                <span class="tag" onclick="quickSearch('洗潔精')">洗潔精</span>
+                <span class="tag" onclick="quickSearch('豬肉')">豬肉</span>
+            </div>
+        </div>
+
+        <div class="how-to">
+            <h3>📖 點用？</h3>
+            <ol>
+                <li>輸入你想買嘅產品名稱</li>
+                <li>按「搵」或者 Enter</li>
+                <li>會自動跳去 Telegram</li>
+                <li>AI 助手會幫你格價！</li>
+            </ol>
+        </div>
+
+        <a href="https://t.me/myaiagent2026C_bot" class="telegram-link" id="telegramLink">
+            💬 直接去 Telegram 問
+        </a>
+
+        <p class="footer">支援：百佳、惠康、Market Place、大生、759<br>Powered by OpenClaw AI</p>
+    </div>
+
+    <script>
+        function search() {
+            const query = document.getElementById('searchInput').value.trim();
+            if (query) {
+                const message = encodeURIComponent(`請幫我格價：${query}\n\n比較香港各大超市價格（百佳、惠康、Market Place等），邊度最平？`);
+                window.open(`https://t.me/myaiagent2026C_bot?text=${message}`, '_blank');
+            }
+        }
+
+        function quickSearch(item) {
+            document.getElementById('searchInput').value = item;
+            search();
+        }
+
+        document.getElementById('searchInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                search();
+            }
+        });
+    </script>
+</body>
+</html>
