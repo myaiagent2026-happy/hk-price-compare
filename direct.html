@@ -66,13 +66,13 @@ function render(results){
 
 function expandKeywords(q){
   const map = {
-    'coke':['可樂','可口可樂','汽水'],
-    'coca cola':['可樂','可口可樂','汽水'],
-    'cola':['可樂','可口可樂','汽水'],
-    'apple':['蘋果','水果'],
-    'banana':['香蕉','水果'],
-    'orange':['橙','橘','水果'],
-    'grape':['提子','葡萄','水果'],
+    'coke':['可樂','可口可樂','coca-cola'],
+    'coca cola':['可樂','可口可樂','coca-cola'],
+    'cola':['可樂','可口可樂','coca-cola'],
+    'apple':['蘋果'],
+    'banana':['香蕉'],
+    'orange':['橙','橘'],
+    'grape':['提子','葡萄'],
     'milk':['牛奶'],
     'egg':['雞蛋','蛋'],
     'eggs':['雞蛋','蛋'],
@@ -90,14 +90,26 @@ function search(){
   if(!q){document.getElementById('status').textContent='請先輸入貨品名稱';return;}
 
   const keywords = expandKeywords(q);
-  const matched = allRows.filter(r=>{
-    const s = `${r.brand} ${r.name} ${r.c1} ${r.c2} ${r.c3}`.toLowerCase();
-    return keywords.some(k => s.includes(k));
-  });
+  const ranked = [];
 
-  matched.sort((a,b)=>a.price-b.price);
-  const top10 = matched.slice(0,10);
-  document.getElementById('status').textContent = `找到 ${matched.length} 項，顯示最平 10 項`;
+  for(const r of allRows){
+    const nameBrand = `${r.brand} ${r.name}`.toLowerCase();
+    const category = `${r.c1} ${r.c2} ${r.c3}`.toLowerCase();
+
+    let score = -1;
+    if(nameBrand.includes(q)) score = 100;
+
+    for(const k of keywords){
+      if(nameBrand.includes(k)) score = Math.max(score, 90);
+      else if(category.includes(k)) score = Math.max(score, 30);
+    }
+
+    if(score >= 0) ranked.push({...r, _score: score});
+  }
+
+  ranked.sort((a,b)=> (b._score-a._score) || (a.price-b.price));
+  const top10 = ranked.slice(0,10);
+  document.getElementById('status').textContent = `找到 ${ranked.length} 項，顯示最平 10 項`;
   render(top10);
 }
 
